@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "stephen_king_parser"
-version = "0.1.0"
+version = "3.0.2"
 description = "A parser for Stephen King's website"
 requires-python = ">=3.7"
 dependencies = [

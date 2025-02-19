@@ -2,7 +2,7 @@ from setuptools import find_packages, setup
 
 setup(
     name="stephen-king-parser",
-    version="0.1.0",
+    version="3.0.2",
     packages=find_packages(where="src"),
     package_dir={"": "src"},
     install_requires=[
