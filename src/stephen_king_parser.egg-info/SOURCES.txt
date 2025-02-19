@@ -1,3 +1,4 @@
+README.md
 pyproject.toml
 setup.py
 src/stephen_king_parser/__init__.py
@@ -12,7 +13,8 @@ src/stephen_king_parser.egg-info/top_level.txt
 src/stephen_king_parser/core/__init__.py
 src/stephen_king_parser/core/models.py
 src/stephen_king_parser/core/parser.py
-src/stephen_king_parser/core/request_manager.py
+src/stephen_king_parser/core/work.py
+src/stephen_king_parser/core/work_processor.py
 src/stephen_king_parser/utils/cache.py
 src/stephen_king_parser/utils/config.py
 tests/test_parser.py
