@@ -1,6 +1,6 @@
 # Stephen King Website Parser
 
-## Version 3.0.0
+## Version 3.0.2
 
 A Python tool to parse and analyze Stephen King's works from his official website.
 
