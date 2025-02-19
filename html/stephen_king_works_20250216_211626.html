@@ -1,0 +1,173 @@
+
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Stephen King Works</title>
+            <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.11.5/css/jquery.dataTables.css">
+            <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/fixedheader/3.2.2/css/fixedHeader.dataTables.min.css">
+            <script type="text/javascript" src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+            <script type="text/javascript" src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.min.js"></script>
+            <script type="text/javascript" src="https://cdn.datatables.net/fixedheader/3.2.2/js/dataTables.fixedHeader.min.js"></script>
+            <style>
+                body {
+                    font-family: Arial, sans-serif;
+                    margin: 20px;
+                    padding-top: 20px;
+                }
+                table {
+                    border-collapse: collapse;
+                    width: 100%;
+                    margin-bottom: 20px;
+                }
+                th, td {
+                    border: 1px solid #ddd;
+                    padding: 8px;
+                    text-align: left;
+                }
+                th {
+                    background-color: #f2f2f2;
+                }
+                tr:nth-child(even) {
+                    background-color: #f9f9f9;
+                }
+                tr:hover {
+                    background-color: #f5f5f5;
+                }
+                a {
+                    color: #0066cc;
+                    text-decoration: none;
+                }
+                a:hover {
+                    text-decoration: underline;
+                }
+                .format-yes {
+                    color: green;
+                    font-weight: bold;
+                }
+                .collection-header {
+                    background-color: #e6e6e6;
+                    padding: 15px;
+                    margin: 10px 0;
+                    cursor: pointer;
+                    border-radius: 5px;
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    font-weight: bold;
+                    color: #333;
+                }
+                .collection-header:hover {
+                    background-color: #d9d9d9;
+                }
+                .collection-content {
+                    display: none;
+                    margin: 10px 0 20px 20px;
+                    padding: 15px;
+                    border-left: 3px solid #e6e6e6;
+                }
+                .collection-content.show {
+                    display: block;
+                }
+                .toggle-icon {
+                    font-size: 20px;
+                    margin-right: 10px;
+                }
+                .standalone-works {
+                    margin-top: 20px;
+                }
+                .dataTables_filter {
+                    margin-bottom: 15px;
+                }
+                .dataTables_wrapper .dataTables_filter input {
+                    margin-left: 0.5em;
+                    padding: 5px;
+                    border-radius: 4px;
+                    border: 1px solid #ddd;
+                }
+                .checkbox-cell {
+                    text-align: center;
+                }
+                .status-checkbox {
+                    width: 20px;
+                    height: 20px;
+                    cursor: pointer;
+                }
+                .status-checkbox:checked {
+                    background-color: #4CAF50;
+                }
+            </style>
+            <script>
+                function toggleCollection(collectionId) {
+                    const content = document.getElementById(collectionId);
+                    const header = document.querySelector(`[onclick="toggleCollection('${collectionId}')"]`);
+                    const icon = header.querySelector('.toggle-icon');
+
+                    if (content.style.display === 'none' || content.style.display === '') {
+                        content.style.display = 'block';
+                        icon.textContent = '−';
+                        // Reinitialize DataTable when showing content
+                        if (!$.fn.DataTable.isDataTable(`#table_${collectionId}`)) {
+                            $(`#table_${collectionId}`).DataTable({
+                                fixedHeader: true,
+                                pageLength: 25,
+                                order: [[1, 'asc']], // Sort by Published date by default
+                            });
+                        }
+                    } else {
+                        content.style.display = 'none';
+                        icon.textContent = '+';
+                    }
+                }
+
+                // Add function to save checkbox states
+                function saveCheckboxStates() {
+                    const checkboxes = document.querySelectorAll('.status-checkbox');
+                    const states = {};
+
+                    checkboxes.forEach(checkbox => {
+                        const key = `${checkbox.dataset.title}_${checkbox.dataset.type}`;
+                        states[key] = checkbox.checked;
+                    });
+
+                    localStorage.setItem('bookStates', JSON.stringify(states));
+                }
+
+                // Add function to load checkbox states
+                function loadCheckboxStates() {
+                    const states = JSON.parse(localStorage.getItem('bookStates') || '{}');
+                    const checkboxes = document.querySelectorAll('.status-checkbox');
+
+                    checkboxes.forEach(checkbox => {
+                        const key = `${checkbox.dataset.title}_${checkbox.dataset.type}`;
+                        if (key in states) {
+                            checkbox.checked = states[key];
+                        }
+                    });
+                }
+
+                $(document).ready(function() {
+                    // Initialize DataTables for standalone works
+                    $('#standalone_table').DataTable({
+                        fixedHeader: true,
+                        pageLength: 25,
+                        order: [[1, 'asc']], // Sort by Published date by default
+                    });
+
+                    // Load saved checkbox states
+                    loadCheckboxStates();
+
+                    // Add event listener for checkbox changes
+                    document.addEventListener('change', function(e) {
+                        if (e.target.classList.contains('status-checkbox')) {
+                            saveCheckboxStates();
+                        }
+                    });
+                });
+            </script>
+        </head>
+        <body>
+            <h1>Stephen King Works</h1>
+        <div class='collections'></div>
+        </body>
+        </html>
+        

@@ -1,0 +1,2 @@
+[console_scripts]
+stephen-king-parser = stephen_king_parser.__main__:main
