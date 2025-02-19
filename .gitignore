@@ -18,3 +18,8 @@ build/
 
 # Environment variables
 .env
+
+# Output directories
+csv/
+html/
+output/
