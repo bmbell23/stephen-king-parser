@@ -1,25 +1,28 @@
+import concurrent.futures
 import csv
-import requests
-from bs4 import BeautifulSoup
-import time
-from datetime import datetime
-import re
-from typing import Dict, List, Tuple, Optional
-from dataclasses import dataclass
-from urllib.parse import urljoin
 import logging
+import re
 import threading
+import time
 from collections import defaultdict
 from concurrent.futures import ThreadPoolExecutor
-import concurrent.futures
+from dataclasses import dataclass
+from datetime import datetime
+from typing import Dict, List, Optional, Tuple
+from urllib.parse import urljoin
+
+import requests
+from bs4 import BeautifulSoup
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+
 @dataclass
 class WorkData:
     """Data class to store information about a work"""
+
     title: str
     cleaned_title: str
     link: str
@@ -29,8 +32,10 @@ class WorkData:
     available_in: str
     available_in_link: str
 
+
 class RequestManager:
     """Manages HTTP requests with rate limiting"""
+
     def __init__(self, rate_limit: float = 1.0):
         self.rate_limit = rate_limit
         self.last_request_time = 0
@@ -51,6 +56,7 @@ class RequestManager:
             logger.error(f"Error making request to {url}: {e}")
             return None
 
+
 class KingWorksParser:
     """
     Parser for extracting and organizing Stephen King's literary works from his official website.
@@ -60,6 +66,7 @@ class KingWorksParser:
     data cleaning, and storage of work details including titles, publication dates, formats,
     and collection relationships.
     """
+
     BASE_URL = "https://www.stephenking.com"
     WORKS_URL = f"{BASE_URL}/works/"
     MAX_WORKERS = 5  # Limit concurrent threads
@@ -83,9 +90,9 @@ class KingWorksParser:
             str: Cleaned title
         """
         # Remove special characters but keep basic punctuation
-        cleaned = re.sub(r'[^\w\s\-\'.,]', '', title)
+        cleaned = re.sub(r"[^\w\s\-\'.,]", "", title)
         # Normalize whitespace
-        cleaned = ' '.join(cleaned.split())
+        cleaned = " ".join(cleaned.split())
         return cleaned
 
     def is_url_processed(self, url: str) -> bool:
@@ -113,7 +120,7 @@ class KingWorksParser:
         # \s* matches optional whitespace before and after the parentheses
         # \([^)]*\) matches anything between parentheses
         # $ ensures we only match parentheses at the end of the string
-        return re.sub(r'\s*\([^)]*\)\s*$', '', title).strip()
+        return re.sub(r"\s*\([^)]*\)\s*$", "", title).strip()
 
     @staticmethod
     def create_excel_hyperlink(url: str, text: str) -> str:
@@ -150,7 +157,7 @@ class KingWorksParser:
 
         try:
             # Attempt to parse the date string into a datetime object
-            return datetime.strptime(date_str.strip(), '%Y-%m-%d')
+            return datetime.strptime(date_str.strip(), "%Y-%m-%d")
         except (ValueError, AttributeError):
             # Return far-future date if parsing fails
             return datetime(9999, 12, 31)
@@ -174,10 +181,10 @@ class KingWorksParser:
             return existing
 
         # Split strings into sets to remove duplicates
-        formats = set(format.strip() for format in existing.split(','))
-        formats.update(format.strip() for format in new.split(','))
+        formats = set(format.strip() for format in existing.split(","))
+        formats.update(format.strip() for format in new.split(","))
         # Join formats back into sorted, comma-separated string
-        return ', '.join(sorted(formats))
+        return ", ".join(sorted(formats))
 
     def extract_collection_info(self, soup: BeautifulSoup) -> tuple[str, str]:
         """
@@ -191,20 +198,20 @@ class KingWorksParser:
         """
         try:
             # Find the Available In section
-            available_in_header = soup.find('h2', string='Available In')
+            available_in_header = soup.find("h2", string="Available In")
             if not available_in_header:
                 return ("", "")
 
             # Find the grid content div that follows the header
-            grid_content = available_in_header.find_next('div', class_='grid-content')
+            grid_content = available_in_header.find_next("div", class_="grid-content")
             if not grid_content:
                 return ("", "")
 
             # Find the collection link within the grid content
-            collection_link = grid_content.find('a', class_='text-link')
+            collection_link = grid_content.find("a", class_="text-link")
             if collection_link:
                 collection_name = collection_link.text.strip()
-                collection_url = urljoin(self.BASE_URL, collection_link['href'])
+                collection_url = urljoin(self.BASE_URL, collection_link["href"])
                 return (collection_name, collection_url)
 
             return ("", "")
@@ -226,21 +233,33 @@ class KingWorksParser:
 
             self.mark_url_processed(link)
 
-            soup = BeautifulSoup(response.text, 'html.parser')
+            soup = BeautifulSoup(response.text, "html.parser")
             formats = set()
 
             # Enhanced format detection
             format_indicators = {
-                'Hardcover': ['hardcover', 'hard cover', 'hard-cover', 'hardback'],
-                'Paperback': ['paperback', 'soft cover', 'soft-cover', 'trade paperback', 'mass market'],
-                'Ebook': ['ebook', 'e-book', 'kindle', 'digital', 'nook', 'electronic'],
-                'Audiobook': ['audiobook', 'audio book', 'audible', 'audio'],
-                'Movie': ['movie', 'film', 'feature film', 'motion picture'],
-                'Miniseries': ['tv series', 'television series', 'miniseries', 'mini-series', 'mini series']
+                "Hardcover": ["hardcover", "hard cover", "hard-cover", "hardback"],
+                "Paperback": [
+                    "paperback",
+                    "soft cover",
+                    "soft-cover",
+                    "trade paperback",
+                    "mass market",
+                ],
+                "Ebook": ["ebook", "e-book", "kindle", "digital", "nook", "electronic"],
+                "Audiobook": ["audiobook", "audio book", "audible", "audio"],
+                "Movie": ["movie", "film", "feature film", "motion picture"],
+                "Miniseries": [
+                    "tv series",
+                    "television series",
+                    "miniseries",
+                    "mini-series",
+                    "mini series",
+                ],
             }
 
             # Check all possible containers
-            containers = soup.find_all(['div', 'section', 'span', 'p', 'li', 'a'])
+            containers = soup.find_all(["div", "section", "span", "p", "li", "a"])
             for container in containers:
                 text = container.get_text(strip=True).lower()
                 for format_type, indicators in format_indicators.items():
@@ -248,14 +267,14 @@ class KingWorksParser:
                         formats.add(format_type)
 
             # Check metadata
-            meta_description = soup.find('meta', {'name': 'description'})
+            meta_description = soup.find("meta", {"name": "description"})
             if meta_description:
-                desc_text = meta_description.get('content', '').lower()
+                desc_text = meta_description.get("content", "").lower()
                 for format_type, indicators in format_indicators.items():
                     if any(indicator in desc_text for indicator in indicators):
                         formats.add(format_type)
 
-            return ', '.join(sorted(formats))
+            return ", ".join(sorted(formats))
 
         except Exception as e:
             logger.error(f"Error extracting formats: {str(e)}")
@@ -265,23 +284,23 @@ class KingWorksParser:
         """Process a work entry and extract relevant information."""
         try:
             # Extract title
-            title_elem = work.find('div', class_='works-title')
+            title_elem = work.find("div", class_="works-title")
             if not title_elem:
                 print(f"No title element found for work")
                 return None
             title = title_elem.text.strip()
 
             # Extract date
-            published_date = work.get('data-date', 'Unknown')
+            published_date = work.get("data-date", "Unknown")
 
             # Extract type
-            type_elem = work.find('div', class_='works-type')
+            type_elem = work.find("div", class_="works-type")
             work_type = type_elem.text.strip() if type_elem else "Unknown"
             work_type = self.normalize_work_type(work_type)
 
             # Extract link
-            link = work.get('href', '')
-            if link and not link.startswith('http'):
+            link = work.get("href", "")
+            if link and not link.startswith("http"):
                 link = urljoin(self.BASE_URL, link)
 
             # Extract collection info
@@ -298,7 +317,7 @@ class KingWorksParser:
                 work_type=work_type,
                 formats=formats,
                 available_in=collection_name,
-                available_in_link=collection_url
+                available_in_link=collection_url,
             )
 
             return work_data
@@ -310,15 +329,15 @@ class KingWorksParser:
     def normalize_work_type(self, work_type: str) -> str:
         """Normalize work type to standard categories."""
         type_mapping = {
-            'novel': 'Novel',
-            'short story': 'Short Story',
-            'collection': 'Story Collection',
-            'anthology': 'Anthology',
-            'novella': 'Novella',
-            'bachman': 'Bachman Novel',
-            'nonfiction': 'Non-Fiction',
-            'screenplay': 'Screenplay',
-            'poem': 'Poem'
+            "novel": "Novel",
+            "short story": "Short Story",
+            "collection": "Story Collection",
+            "anthology": "Anthology",
+            "novella": "Novella",
+            "bachman": "Bachman Novel",
+            "nonfiction": "Non-Fiction",
+            "screenplay": "Screenplay",
+            "poem": "Poem",
         }
 
         work_type = work_type.lower()
@@ -336,13 +355,14 @@ class KingWorksParser:
             logger.error("Failed to fetch main works page")
             return
 
-        soup = BeautifulSoup(response.text, 'html.parser')
-        work_elements = soup.find_all('a', class_='row work')  # Use consistent selector
+        soup = BeautifulSoup(response.text, "html.parser")
+        work_elements = soup.find_all("a", class_="row work")  # Use consistent selector
 
         # Process works in parallel with limited concurrency
         with ThreadPoolExecutor(max_workers=self.MAX_WORKERS) as executor:
-            future_to_work = {executor.submit(self.process_work, work): work
-                            for work in work_elements}
+            future_to_work = {
+                executor.submit(self.process_work, work): work for work in work_elements
+            }
 
             for future in concurrent.futures.as_completed(future_to_work):
                 work_data = future.result()
@@ -360,7 +380,7 @@ class KingWorksParser:
             work_data.published_date,
             work_data.work_type,
             work_data.available_in_link,
-            work_data.formats
+            work_data.formats,
         ]
 
         # Check for existing entry
@@ -369,19 +389,25 @@ class KingWorksParser:
             new_date = work_data.published_date
 
             # Only update if the new date is valid and earlier than existing
-            if (new_date != "Unknown" and
-                (existing_date == "Unknown" or
-                 self.convert_to_datetime(new_date) < self.convert_to_datetime(existing_date))):
+            if new_date != "Unknown" and (
+                existing_date == "Unknown"
+                or self.convert_to_datetime(new_date)
+                < self.convert_to_datetime(existing_date)
+            ):
 
                 # Combine formats if they exist
                 existing_formats = self.works_dict[work_data.cleaned_title][4]
                 new_formats = work_data.formats
-                combined_formats = self.merge_format_strings(existing_formats, new_formats)  # Changed from combine_formats
+                combined_formats = self.merge_format_strings(
+                    existing_formats, new_formats
+                )  # Changed from combine_formats
 
                 # Use new data but keep combined formats
                 row_data[4] = combined_formats
                 self.works_dict[work_data.cleaned_title] = row_data
-                print(f"Updated: {work_data.title} with earlier date {work_data.published_date}")
+                print(
+                    f"Updated: {work_data.title} with earlier date {work_data.published_date}"
+                )
         else:
             # Add new work to dictionary
             self.works_dict[work_data.cleaned_title] = row_data
@@ -391,34 +417,41 @@ class KingWorksParser:
         for title, row_data in self.works_dict.items():
             available_in_hyperlink = row_data[3]
             if available_in_hyperlink:
-                collection_name = re.search(r'"[^"]*", "([^"]*)"', available_in_hyperlink)
-                if collection_name and collection_name.group(1) in self.collection_dates:
+                collection_name = re.search(
+                    r'"[^"]*", "([^"]*)"', available_in_hyperlink
+                )
+                if (
+                    collection_name
+                    and collection_name.group(1) in self.collection_dates
+                ):
                     collection_date = self.collection_dates[collection_name.group(1)]
                     row_data[1] = collection_date
-                    print(f"Updated '{title}' publication date to match collection '{collection_name.group(1)}': {collection_date}")
+                    print(
+                        f"Updated '{title}' publication date to match collection '{collection_name.group(1)}': {collection_date}"
+                    )
 
     def normalize_format(self, format_str: str) -> str:
         """Normalize format strings to standard values."""
         if not format_str:  # Handle None or empty string
-            return ''
+            return ""
 
         format_str = format_str.strip().lower()
 
         # Format mappings
-        if format_str in ['kindle', 'ebook']:
-            return 'Yes'
-        elif format_str in ['audio', 'audiobook']:
-            return 'Yes'
-        elif format_str in ['movie', 'tv movie', 'dvd']:
-            return 'Yes'
-        elif format_str == 'tv miniseries':
-            return 'Yes'
-        elif format_str in ['hardcover']:
-            return 'Yes'
-        elif format_str in ['paperback']:
-            return 'Yes'
+        if format_str in ["kindle", "ebook"]:
+            return "Yes"
+        elif format_str in ["audio", "audiobook"]:
+            return "Yes"
+        elif format_str in ["movie", "tv movie", "dvd"]:
+            return "Yes"
+        elif format_str == "tv miniseries":
+            return "Yes"
+        elif format_str in ["hardcover"]:
+            return "Yes"
+        elif format_str in ["paperback"]:
+            return "Yes"
         else:
-            return ''
+            return ""
 
     def process_formats(self, formats_str: str) -> Dict[str, str]:
         """
@@ -431,65 +464,78 @@ class KingWorksParser:
             Dict[str, str]: Dictionary with format types as keys and '✓' or '' as values
         """
         formats_dict = {
-            'Hardcover': '',
-            'Paperback': '',
-            'Ebook': '',
-            'Audiobook': '',
-            'Movie': '',
-            'Miniseries': ''
+            "Hardcover": "",
+            "Paperback": "",
+            "Ebook": "",
+            "Audiobook": "",
+            "Movie": "",
+            "Miniseries": "",
         }
 
         if not formats_str:
             return formats_dict
 
-        format_list = formats_str.split(',')
+        format_list = formats_str.split(",")
         for fmt in format_list:
             fmt = fmt.strip()
-            if 'Hardcover' in fmt:
-                formats_dict['Hardcover'] = '✓'
-            if 'Paperback' in fmt:
-                formats_dict['Paperback'] = '✓'
-            if 'Kindle' in fmt or 'eBook' in fmt:
-                formats_dict['Ebook'] = '✓'
-            if 'Audio' in fmt or 'Audiobook' in fmt:
-                formats_dict['Audiobook'] = '✓'
-            if 'Movie' in fmt:
-                formats_dict['Movie'] = '✓'
-            if 'TV' in fmt or 'Miniseries' in fmt:
-                formats_dict['Miniseries'] = '✓'
+            if "Hardcover" in fmt:
+                formats_dict["Hardcover"] = "✓"
+            if "Paperback" in fmt:
+                formats_dict["Paperback"] = "✓"
+            if "Kindle" in fmt or "eBook" in fmt:
+                formats_dict["Ebook"] = "✓"
+            if "Audio" in fmt or "Audiobook" in fmt:
+                formats_dict["Audiobook"] = "✓"
+            if "Movie" in fmt:
+                formats_dict["Movie"] = "✓"
+            if "TV" in fmt or "Miniseries" in fmt:
+                formats_dict["Miniseries"] = "✓"
 
         return formats_dict
 
     def format_published_date(self, date_str: str) -> str:
         """Convert '0000-00-00' dates to empty string."""
-        return '' if date_str == '0000-00-00' else date_str
+        return "" if date_str == "0000-00-00" else date_str
 
     def export_to_csv(self, filename: str, works_data: List[List[str]]):
         """Export works data to CSV file with separate format columns."""
-        with open(filename, 'w', newline='', encoding='utf-8') as file:
+        with open(filename, "w", newline="", encoding="utf-8") as file:
             writer = csv.writer(file)
-            writer.writerow([
-                'Read', 'Owned', 'Published',  # First three columns
-                'Title', 'Type', 'Available In',
-                'Hardcover', 'Paperback', 'Ebook', 'Audiobook', 'Movie', 'Miniseries'
-            ])
+            writer.writerow(
+                [
+                    "Read",
+                    "Owned",
+                    "Published",  # First three columns
+                    "Title",
+                    "Type",
+                    "Available In",
+                    "Hardcover",
+                    "Paperback",
+                    "Ebook",
+                    "Audiobook",
+                    "Movie",
+                    "Miniseries",
+                ]
+            )
 
             for row in works_data:
                 formats_dict = self.process_formats(row[4])
-                writer.writerow([
-                    '',  # Read
-                    '',  # Owned
-                    self.format_published_date(row[1]),  # Published
-                    row[0],  # Title
-                    row[2],  # Type
-                    row[3],  # Available In
-                    formats_dict['Hardcover'],
-                    formats_dict['Paperback'],
-                    formats_dict['Ebook'],
-                    formats_dict['Audiobook'],
-                    formats_dict['Movie'],
-                    formats_dict['Miniseries']
-                ])
+                writer.writerow(
+                    [
+                        "",  # Read
+                        "",  # Owned
+                        self.format_published_date(row[1]),  # Published
+                        row[0],  # Title
+                        row[2],  # Type
+                        row[3],  # Available In
+                        formats_dict["Hardcover"],
+                        formats_dict["Paperback"],
+                        formats_dict["Ebook"],
+                        formats_dict["Audiobook"],
+                        formats_dict["Movie"],
+                        formats_dict["Miniseries"],
+                    ]
+                )
 
     def parse_excel_hyperlink(self, excel_formula: str) -> tuple[str, str]:
         """
@@ -501,14 +547,14 @@ class KingWorksParser:
         Returns:
             tuple[str, str]: (url, text) tuple
         """
-        if not excel_formula.startswith('=HYPERLINK('):
-            return ('', excel_formula)
+        if not excel_formula.startswith("=HYPERLINK("):
+            return ("", excel_formula)
 
         # Extract URL and text from HYPERLINK formula
         match = re.match(r'=HYPERLINK\("([^"]+)",\s*"([^"]+)"\)', excel_formula)
         if match:
             return (match.group(1), match.group(2))
-        return ('', excel_formula)
+        return ("", excel_formula)
 
     def excel_hyperlink_to_html(self, excel_formula: str) -> str:
         """
@@ -520,7 +566,7 @@ class KingWorksParser:
         Returns:
             str: HTML anchor tag
         """
-        if not excel_formula.startswith('=HYPERLINK('):
+        if not excel_formula.startswith("=HYPERLINK("):
             return excel_formula
 
         url, text = self.parse_excel_hyperlink(excel_formula)
@@ -549,38 +595,38 @@ class KingWorksParser:
             html_parts.append(f'<div class="collection-section">')
             html_parts.append(f'<div class="collection-header">{collection_name}</div>')
             html_parts.append(self._generate_table_content(collection_works))
-            html_parts.append('</div>')
+            html_parts.append("</div>")
 
         # Add standalone works
         if standalone_works:
             html_parts.append('<div class="standalone-section">')
             html_parts.append('<div class="standalone-header">Standalone Works</div>')
             html_parts.append(self._generate_table_content(standalone_works))
-            html_parts.append('</div>')
+            html_parts.append("</div>")
 
-        return '\n'.join(html_parts)
+        return "\n".join(html_parts)
 
     def _generate_table_content(self, rows: List[List[str]]) -> str:
         """Generate the actual table HTML for a set of works."""
         table_html = [
             '<table class="works-table">',
-            '<thead>',
-            '<tr>',
-            '<th>Read</th>',
-            '<th>Owned</th>',
-            '<th>Published</th>',
-            '<th>Title</th>',
-            '<th>Type</th>',
-            '<th>Collection</th>',
-            '<th>Hardcover</th>',
-            '<th>Paperback</th>',
-            '<th>Ebook</th>',
-            '<th>Audiobook</th>',
-            '<th>Movie</th>',
-            '<th>Miniseries</th>',
-            '</tr>',
-            '</thead>',
-            '<tbody>'
+            "<thead>",
+            "<tr>",
+            "<th>Read</th>",
+            "<th>Owned</th>",
+            "<th>Published</th>",
+            "<th>Title</th>",
+            "<th>Type</th>",
+            "<th>Collection</th>",
+            "<th>Hardcover</th>",
+            "<th>Paperback</th>",
+            "<th>Ebook</th>",
+            "<th>Audiobook</th>",
+            "<th>Movie</th>",
+            "<th>Miniseries</th>",
+            "</tr>",
+            "</thead>",
+            "<tbody>",
         ]
 
         for row in rows:
@@ -588,31 +634,44 @@ class KingWorksParser:
             url, text = self.parse_excel_hyperlink(row[0])
             collection_url, collection_text = self.parse_excel_hyperlink(row[3])
 
-            table_html.append('<tr>')
-            table_html.extend([
-                f'<td><input type="checkbox" class="status-checkbox" data-title="{text}" data-type="read"></td>',
-                f'<td><input type="checkbox" class="status-checkbox" data-title="{text}" data-type="owned"></td>',
-                f'<td>{self.format_published_date(row[1])}</td>',
-                f'<td><a href="{url}">{text}</a></td>',
-                f'<td>{row[2]}</td>'
-            ])
+            table_html.append("<tr>")
+            table_html.extend(
+                [
+                    f'<td><input type="checkbox" class="status-checkbox" data-title="{text}" data-type="read"></td>',
+                    f'<td><input type="checkbox" class="status-checkbox" data-title="{text}" data-type="owned"></td>',
+                    f"<td>{self.format_published_date(row[1])}</td>",
+                    f'<td><a href="{url}">{text}</a></td>',
+                    f"<td>{row[2]}</td>",
+                ]
+            )
 
             # Collection column
             if collection_url and collection_text:
-                table_html.append(f'<td><a href="{collection_url}">{collection_text}</a></td>')
+                table_html.append(
+                    f'<td><a href="{collection_url}">{collection_text}</a></td>'
+                )
             else:
-                table_html.append('<td></td>')
+                table_html.append("<td></td>")
 
             # Format columns
-            for format_type in ['Hardcover', 'Paperback', 'Ebook', 'Audiobook', 'Movie', 'Miniseries']:
-                is_available = formats_dict[format_type] == '✓'
-                cell_class = 'format-cell yes' if is_available else 'format-cell'
-                table_html.append(f'<td class="{cell_class}">{formats_dict[format_type]}</td>')
+            for format_type in [
+                "Hardcover",
+                "Paperback",
+                "Ebook",
+                "Audiobook",
+                "Movie",
+                "Miniseries",
+            ]:
+                is_available = formats_dict[format_type] == "✓"
+                cell_class = "format-cell yes" if is_available else "format-cell"
+                table_html.append(
+                    f'<td class="{cell_class}">{formats_dict[format_type]}</td>'
+                )
 
-            table_html.append('</tr>')
+            table_html.append("</tr>")
 
-        table_html.extend(['</tbody>', '</table>'])
-        return '\n'.join(table_html)
+        table_html.extend(["</tbody>", "</table>"])
+        return "\n".join(table_html)
 
     def export_to_html(self, filename: str, works_data: List[List[str]]):
         """Export works data to HTML."""
@@ -793,7 +852,7 @@ class KingWorksParser:
 </body>
 </html>"""
 
-        with open(filename, 'w', encoding='utf-8') as f:
+        with open(filename, "w", encoding="utf-8") as f:
             f.write(html_content)
 
     def parse_and_export(self):
@@ -805,10 +864,10 @@ class KingWorksParser:
             return
 
         print(f"Got response with status code: {response.status_code}")
-        soup = BeautifulSoup(response.text, 'html.parser')
+        soup = BeautifulSoup(response.text, "html.parser")
 
         # Look specifically for work elements with the correct class
-        works = soup.find_all('a', class_='row work')
+        works = soup.find_all("a", class_="row work")
 
         if not works:
             print("No works found using primary selector. HTML content sample:")
@@ -835,12 +894,17 @@ class KingWorksParser:
                 failed_count += 1
                 print(f"Error processing work: {str(e)}")
 
-        print(f"Successfully processed {processed_count} works, failed to process {failed_count} works")
+        print(
+            f"Successfully processed {processed_count} works, failed to process {failed_count} works"
+        )
 
         # Sort and prepare works data
         works_data = sorted(
             self.works_dict.values(),
-            key=lambda x: (self.convert_to_datetime(x[1]), x[0])  # Sort by date, then title
+            key=lambda x: (
+                self.convert_to_datetime(x[1]),
+                x[0],
+            ),  # Sort by date, then title
         )
 
         if not works_data:
@@ -851,14 +915,15 @@ class KingWorksParser:
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 
         # Export to CSV
-        csv_file = f'stephen_king_works_{timestamp}.csv'
+        csv_file = f"stephen_king_works_{timestamp}.csv"
         self.export_to_csv(csv_file, works_data)
         print(f"CSV file '{csv_file}' created successfully!")
 
         # Export to HTML
-        html_file = f'stephen_king_works_{timestamp}.html'
+        html_file = f"stephen_king_works_{timestamp}.html"
         self.export_to_html(html_file, works_data)
         print(f"HTML file '{html_file}' created successfully!")
+
 
 def main():
     """Main entry point for the Stephen King works parser application.
@@ -868,6 +933,7 @@ def main():
     """
     parser = KingWorksParser()
     parser.parse_and_export()
+
 
 if __name__ == "__main__":
     main()

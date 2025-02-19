@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 
+
 @dataclass
 class Work:
     title: str

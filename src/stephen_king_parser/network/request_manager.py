@@ -1,9 +1,11 @@
-import time
 import logging
+import time
 from typing import Optional
+
 import requests
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
+
 
 class RequestManager:
     def __init__(self, rate_limit: float = 0.5):

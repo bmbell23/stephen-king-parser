@@ -1,3 +1,3 @@
 from .parser import KingWorksParser
 
-__all__ = ['KingWorksParser']
+__all__ = ["KingWorksParser"]

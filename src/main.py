@@ -1,5 +1,7 @@
-from stephen_king_parser.core.parser import KingWorksParser
 import os
+
+from stephen_king_parser.core.parser import KingWorksParser
+
 
 def main():
     parser = KingWorksParser()
@@ -11,6 +13,7 @@ def main():
     base_dir = os.getcwd()
     output_file = parser.export_to_csv(works, base_dir)
     print(f"\nData exported to {output_file}")
+
 
 if __name__ == "__main__":
     main()

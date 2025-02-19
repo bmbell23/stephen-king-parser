@@ -1,6 +1,12 @@
 class Work:
-    def __init__(self, title: str, published_date: str = None, work_type: str = None,
-                 url: str = None, available_in: str = None):
+    def __init__(
+        self,
+        title: str,
+        published_date: str = None,
+        work_type: str = None,
+        url: str = None,
+        available_in: str = None,
+    ):
         self.title = title
         self.published_date = published_date
         self.work_type = work_type

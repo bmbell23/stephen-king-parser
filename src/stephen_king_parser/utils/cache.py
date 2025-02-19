@@ -1,9 +1,11 @@
-import json
-from pathlib import Path
-from typing import Optional, Any, Dict
-import aiofiles
 import hashlib
+import json
 from datetime import datetime, timedelta
+from pathlib import Path
+from typing import Any, Optional
+
+import aiofiles
+
 
 class Cache:
     def __init__(self, cache_dir: str = ".cache", ttl: int = 86400):
@@ -23,10 +25,14 @@ class Cache:
             return None
 
         try:
-            async with aiofiles.open(cache_path, 'r') as f:
+            async with aiofiles.open(cache_path, "r") as f:
                 data = json.loads(await f.read())
-                if datetime.fromisoformat(data['timestamp']) + timedelta(seconds=self.ttl) > datetime.now():
-                    return data['content']
+                if (
+                    datetime.fromisoformat(data["timestamp"])
+                    + timedelta(seconds=self.ttl)
+                    > datetime.now()
+                ):
+                    return data["content"]
         except (json.JSONDecodeError, KeyError, ValueError):
             await self.delete(key)
         return None
@@ -34,11 +40,8 @@ class Cache:
     async def set(self, key: str, value: Any) -> None:
         """Set value in cache with timestamp"""
         cache_path = self._get_cache_path(key)
-        data = {
-            'timestamp': datetime.now().isoformat(),
-            'content': value
-        }
-        async with aiofiles.open(cache_path, 'w') as f:
+        data = {"timestamp": datetime.now().isoformat(), "content": value}
+        async with aiofiles.open(cache_path, "w") as f:
             await f.write(json.dumps(data))
 
     async def delete(self, key: str) -> None:
