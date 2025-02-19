@@ -6,6 +6,7 @@ venv/
 __pycache__/
 *.py[cod]
 *$py.class
+.pytest_cache/
 
 # Distribution / packaging
 dist/
@@ -23,3 +24,7 @@ build/
 csv/
 html/
 output/
+
+# Byte-compiled files
+**/__pycache__/
+**/*.py[cod]
