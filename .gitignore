@@ -25,6 +25,5 @@ csv/
 html/
 output/
 
-# Byte-compiled files
-**/__pycache__/
-**/*.py[cod]
+# VS Code tags
+.vstags
